@@ -1,0 +1,6 @@
+# /go.sum
+/.env
+/vendor
+# disable the exe build
+/*.exe*
+files/*
