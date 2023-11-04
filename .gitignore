@@ -5,3 +5,5 @@
 /*.exe*
 files/*
 tmp/*
+/go.sum
+/go.work.sum
