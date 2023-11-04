@@ -20,7 +20,14 @@ func main() {
 	}
 	router := gin.New()
 	router.Use(gin.Logger())
+	//All the Routes
 	routes.UserRoutes(router)
+	routes.FoodRoutes(router)
+	routes.OderItemRoutes(router)
+	routes.OderRoutes(router)
+	routes.TableRouter(router)
+	routes.MenuRoutes(router)
+	routes.InvoiceRoutes(router)
 
 	router.GET("/", welcome)
 	router.Run(":" + port)
