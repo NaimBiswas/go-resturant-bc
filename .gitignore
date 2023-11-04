@@ -4,3 +4,4 @@
 # disable the exe build
 /*.exe*
 files/*
+tmp/*
