@@ -1,5 +1,4 @@
-package main
+package models
 
-func main() {
-
+type OrderItemModel struct {
 }
