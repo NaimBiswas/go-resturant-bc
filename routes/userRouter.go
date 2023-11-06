@@ -9,6 +9,7 @@ import (
 func UserRoutes(router *gin.Engine) {
 	// register routes
 	router.GET("/user/", controllers.GetUsers)
+	router.GET("/user/:id", controllers.GetUser)
 	router.POST("/user/sign-up/", controllers.CreateUserRouterHandler)
 	router.POST("/user/login/", controllers.LoginUser)
 	router.PUT("/user/:id", controllers.UpdateUserRouterByIDHandler)
