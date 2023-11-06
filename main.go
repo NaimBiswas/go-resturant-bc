@@ -15,6 +15,8 @@ func main() {
 	port := appConfig.Port
 	//database connection
 	database.DbInstance()
+	database.CreatedIndexes()
+
 	if port == "" {
 		port = "8080"
 	}
