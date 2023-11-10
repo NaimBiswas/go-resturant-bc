@@ -2,12 +2,8 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
 	"restaurent-mng-bc/commonServices"
@@ -15,6 +11,11 @@ import (
 	"restaurent-mng-bc/models"
 	"restaurent-mng-bc/response"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var userCollection string = "users"
@@ -56,15 +57,14 @@ func GetUser(c *gin.Context) {
 
 func CreateUserRouterHandler(c *gin.Context) {
 	Db := database.Db
-	validate := validator.New()
 	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	var user models.UserModel
+	var user models.RegistrationModel
 	if err := c.BindJSON(&user); err != nil {
 		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	validateErr := validate.Struct(user)
+	validateErr := commonServices.Validate.Struct(user)
 	if validateErr != nil {
 		response.ErrorResponse(c, http.StatusBadRequest, validateErr.Error())
 		return
@@ -78,7 +78,10 @@ func CreateUserRouterHandler(c *gin.Context) {
 	user.Status = "sign-up"
 
 	//check the validation for title
-	count, _ := Db.Collection(userCollection).CountDocuments(ctx, bson.M{"userName": user.UserName})
+	count, _ := Db.Collection(userCollection).CountDocuments(ctx, bson.D{{Key: "$or", Value: []interface{}{
+		bson.D{{Key: "userName", Value: user.UserName}},
+		bson.D{{Key: "email", Value: user.Email}},
+	}}})
 	if count > 0 {
 		response.ErrorResponse(c, http.StatusBadRequest, "User with the same name already exits.")
 		return
@@ -101,7 +104,44 @@ func DeleteUserRouterByIDHandler(c *gin.Context) {
 }
 
 func LoginUser(c *gin.Context) {
+	Db := database.Db
+	var loginModel models.LoginModel
+	err := commonServices.Validate.Struct(loginModel)
 
+	if err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if err = c.BindJSON(&loginModel); err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	var ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	var User models.UserModel
+
+	err = Db.Collection(userCollection).FindOne(ctx, bson.M{"email": loginModel.Email}).Decode(&User)
+
+	if err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	err = ComparePassword(User.Password, loginModel.Password)
+	if err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, "User email/password doesn't match")
+		return
+	}
+	userToken, _ := json.Marshal(User)
+	res := map[string]any{
+		"message": "Login success",
+		"user":    userToken,
+		"tokens": map[string]any{
+			"access":  userToken,
+			"refresh": userToken,
+		},
+	}
+	response.SuccessResponse(c, http.StatusAccepted, res)
+	return
 }
 
 func HashPassword(password string) string {
@@ -117,9 +157,16 @@ func ComparePassword(hashPassword string, password string) error {
 	pw := []byte(password)
 	hw := []byte(hashPassword)
 	err := bcrypt.CompareHashAndPassword(hw, pw)
-	return err
+	if err != nil {
+		if err == bcrypt.ErrMismatchedHashAndPassword {
+			return err
+		} else {
+			return err
+		}
+	}
+	return nil
 }
 
-func sendVerificationMail(user models.UserModel) {
+func sendVerificationMail(user models.RegistrationModel) {
 	fmt.Println("Mail Will be send from Here")
 }
