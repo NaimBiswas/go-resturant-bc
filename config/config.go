@@ -8,10 +8,12 @@ import (
 )
 
 type AppConfig struct {
-	Port   string
-	DbUrl  string
-	DbName string
-	ENV    string
+	Port          string
+	DbUrl         string
+	DbName        string
+	ENV           string
+	RedisAddress  string
+	RedisPassword string
 }
 
 func loadEnvConfig() error {
@@ -32,10 +34,12 @@ func Config() (*AppConfig, error) {
 		panic("Error loading environment variables: " + err.Error())
 	}
 	config := &AppConfig{
-		ENV:    os.Getenv("ENV"),
-		Port:   os.Getenv("PORT"),
-		DbName: os.Getenv("DB_NAME"),
-		DbUrl:  os.Getenv("DB_URL"),
+		ENV:           os.Getenv("ENV"),
+		Port:          os.Getenv("PORT"),
+		DbName:        os.Getenv("DB_NAME"),
+		DbUrl:         os.Getenv("DB_URL"),
+		RedisAddress:  os.Getenv("REDIS_URL"),
+		RedisPassword: os.Getenv("REDIS_PASSWORD"),
 	}
 	return config, nil
 }
