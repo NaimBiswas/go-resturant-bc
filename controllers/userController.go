@@ -29,13 +29,13 @@ func GetUsers(c *gin.Context) {
 		response.ErrorResponse(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	var allMenus []bson.M
+	var allUsers []models.UserModel
 
-	if err = result.All(ctx, &allMenus); err != nil {
+	if err = result.All(ctx, &allUsers); err != nil {
 		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	response.SuccessResponse(c, http.StatusAccepted, allMenus)
+	response.SuccessResponse(c, http.StatusAccepted, allUsers)
 	return
 }
 
