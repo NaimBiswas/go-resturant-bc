@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"restaurent-mng-bc/commonServices"
 	"restaurent-mng-bc/commonType/collections"
@@ -57,7 +56,7 @@ func GetFoods(c *gin.Context) {
 func GetFood(c *gin.Context) {
 	var _Db = database.Db
 	var foodId = c.Param("id")
-	fmt.Println(foodId)
+
 	ObjectId, _ := primitive.ObjectIDFromHex(foodId)
 	redisKey := collections.FoodCollection + ":" + foodId
 
@@ -68,7 +67,6 @@ func GetFood(c *gin.Context) {
 
 	err := commonServices.GetRedisStringValue(ctx, redisKey, &food)
 	if err == nil {
-		log.Println(food)
 		response.SuccessResponse(c, http.StatusOK, food)
 		return
 	}
@@ -101,6 +99,8 @@ func CreateFood(c *gin.Context) {
 	food.ID = primitive.NewObjectID()
 	food.CreatedAt = commonServices.GetDate()
 	food.UpdatedAt = commonServices.GetDate()
+	food.CreatedBy = "Admin - RMS"
+	food.UpdatedBy = "Admin - RMS"
 	food.IsActive = true
 
 	_, err := Db.Collection(collections.FoodCollection).InsertOne(ctx, food)
@@ -113,8 +113,49 @@ func CreateFood(c *gin.Context) {
 }
 
 func UpdateFood(c *gin.Context) {
+	var _Db = database.Db
+	var foodId = c.Param("id")
 
+	ObjectId, _ := primitive.ObjectIDFromHex(foodId)
+	redisKey := collections.FoodCollection + ":" + foodId
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	var updateFoodModel models.UpdateFoodModel
+	var foodModel models.FoodModel
+	if err := c.BindJSON(&updateFoodModel); err != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	validateErr := commonServices.Validate.Struct(updateFoodModel)
+	if validateErr != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, validateErr.Error())
+		return
+	}
+
+	updateFoodModel.ID = ObjectId
+	updateFoodModel.UpdatedAt = commonServices.GetDate()
+	updateFoodModel.UpdatedBy = "Admin - RMS"
+
+	after := options.After
+
+	result := _Db.Collection(collections.FoodCollection).FindOneAndUpdate(ctx,
+		bson.M{"_id": ObjectId},
+		bson.M{"$set": updateFoodModel},
+		&options.FindOneAndUpdateOptions{ReturnDocument: &after})
+
+	if result.Err() != nil {
+		response.ErrorResponse(c, http.StatusBadRequest, result.Err().Error())
+		return
+	}
+	result.Decode(&foodModel)
+
+	response.SuccessResponse(c, http.StatusOK, foodModel)
+	commonServices.SetStringVal(ctx, redisKey, foodModel, 180)
 }
+
 func DeleteFood(c *gin.Context) {
 
 }
