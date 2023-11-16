@@ -20,6 +20,7 @@ func main() {
 	//database connection
 	database.DbInstance()
 	database.CreatedIndexes()
+	database.Redis()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if port == "" {
 		port = "8080"
