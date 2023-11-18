@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"restaurent-mng-bc/commonServices"
 	"restaurent-mng-bc/commonType/collections"
@@ -157,7 +158,21 @@ func UpdateFood(c *gin.Context) {
 }
 
 func DeleteFood(c *gin.Context) {
+	var _Db = database.Db
+	var foodId = c.Param("id")
 
+	ObjectId, _ := primitive.ObjectIDFromHex(foodId)
+	redisKey := collections.FoodCollection + ":" + foodId
+
+	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+
+	_Db.Collection(collections.FoodCollection).FindOneAndUpdate(ctx, bson.M{"_id": ObjectId}, bson.M{"$set": bson.M{"isActive": false}})
+	err := commonServices.DeleteRedisStringValue(ctx, redisKey)
+	if err != nil {
+		log.Println("Error in Redis Delete", err.Error())
+	}
+	response.SuccessResponse(c, http.StatusOK, "Deleted Successfully")
 }
 
 func round(num float64) {
