@@ -28,3 +28,12 @@ func GetRedisStringValue(ctx context.Context, key string, value interface{}) err
 	_ = json.Unmarshal([]byte(rResult), &value)
 	return nil
 }
+
+func DeleteRedisStringValue(ctx context.Context, key string) error {
+	rClient := database.RedisClient
+	_, err := rClient.Del(ctx, key).Result()
+	if err != nil {
+		return err
+	}
+	return nil
+}
