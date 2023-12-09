@@ -21,6 +21,7 @@ func main() {
 	database.DbInstance()
 	database.CreatedIndexes()
 	database.Redis()
+	database.InitPostgresql()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	if port == "" {
 		port = "8080"
